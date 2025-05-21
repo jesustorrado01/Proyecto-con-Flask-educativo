@@ -31,11 +31,6 @@ Este proyecto se encuentra **completo**, pero siempre estoy abierto a mejorarlo 
 
 ---
 
-### 😵‍💫 Ver ejemplo en vivo
-- https://jesustorrado01.github.io/Proyecto-con-Flask-educativo/login
-
----
-
 ### 💡 Nota personal
 No tengo mucha experiencia aún, pero sí muchas ganas de seguir creciendo en este mundo del desarrollo.  
 Si ves algo que se puede mejorar, ¡toda sugerencia es bienvenida! 😊
