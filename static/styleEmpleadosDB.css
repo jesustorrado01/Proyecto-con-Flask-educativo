@@ -1,0 +1,95 @@
+body {
+    background-color: #f8f9fa;
+    color: #333;
+}
+
+nav {
+    background-color: #004085;
+    padding: 15px;
+    border-radius: 5px;
+    margin-bottom: 20px;
+}
+
+nav a {
+    color: white;
+    font-size: 1.1em;
+    text-decoration: none;
+    margin-right: 15px;
+}
+
+nav a.active {
+    font-weight: bold;
+    color: #d4edda;
+}
+
+h2, h3 {
+    color: #004085;
+}
+
+table {
+    width: 100%;
+    margin-top: 20px;
+    background-color: white;
+}
+
+th, td {
+    text-align: center;
+    padding: 12px;
+}
+
+th {
+    background-color: #007bff;
+    color: white;
+}
+
+.btn-edit {
+    background-color: #ffc107;
+    color: white;
+    padding: 5px 10px;
+    text-decoration: none;
+    border-radius: 5px;
+}
+
+.btn-edit:hover {
+    background-color: #e0a800;
+}
+
+button[type="submit"] {
+    background-color: #dc3545;
+    color: white;
+    padding: 5px 10px;
+    border: none;
+    border-radius: 5px;
+}
+
+button[type="submit"]:hover {
+    background-color: #c82333;
+}
+
+.form-group {
+    margin-bottom: 15px;
+}
+
+.form-group label {
+    font-weight: bold;
+}
+
+.form-group input {
+    width: 100%;
+    padding: 8px;
+    border-radius: 5px;
+    border: 1px solid #ddd;
+}
+
+.form-group button {
+    background-color: #28a745;
+    color: white;
+    padding: 10px 20px;
+    border-radius: 5px;
+    border: none;
+    width: 100%;
+}
+
+.form-group button:hover {
+    background-color: #218838;
+}
