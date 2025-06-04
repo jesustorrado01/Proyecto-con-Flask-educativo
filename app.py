@@ -162,13 +162,12 @@ def delete_producto(id):
 @app.route('/empleadosDB')
 @login_required
 def empleadosDB():
-    if Rol.query.get(current_user.rol_FK).rol_usuario != "administrador":
-        flash ('Acceso no autorizado', 'danger')
+    rol_usuario = Rol.query.get(current_user.rol_FK)
+    if not rol_usuario or rol_usuario.rol_usuario != "administrador":
+        flash('Acceso no autorizado', 'danger')
         return redirect(url_for('adminMain'))
 
-
     empleados = Empleado.query.all()
-
     return render_template('empleadosDB.html', empleados=empleados)
 
 @app.route('/empleadosDB/create', methods=['POST'])
