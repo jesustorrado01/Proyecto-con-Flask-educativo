@@ -179,6 +179,10 @@ def create_empleado():
         
     data = request.form
 
+    usuario_existente = Usuario.query.filter_by(usuario=data['usuario']).first()
+    if usuario_existente:
+        return jsonify({"Error": "El nombre de usuario ya esta en uso. Por favor, elige otro"}), 400
+    
     nuevo_usuario = Usuario(
         usuario = data['usuario'],
         contraseña=bcrypt.generate_password_hash(data['contraseña']).decode('utf-8'),
