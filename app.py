@@ -30,6 +30,10 @@ login_manager.login_view = 'login'
 def load_user(user_id):
     return db.session.get(Usuario, int(user_id))
 
+@app.route('/')
+def index():
+    return redirect(url_for('login'))
+
 #INICIO DE SESION
 @app.route("/login", methods=['GET', 'POST'])
 def login():
