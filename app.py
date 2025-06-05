@@ -107,19 +107,55 @@ def productosDB():
 @login_required
 def create_producto():
     if Rol.query.get(current_user.rol_FK).rol_usuario != "administrador":
-        return jsonify({"error": "Acceso no autorizado"}), 403
+        flash("Acceso no autorizado", "danger")
+        return redirect(url_for('productosDB'))
 
     data = request.form
+    errores = []
+
+    nombre = data.get('nombre_producto', '').strip()
+    if not nombre.isalpha():
+        errores.append("El nombre del producto debe contener solo letras.")
+
+    try:
+        cantidad = int(data.get('cantidad', ''))
+        if cantidad < 0:
+            errores.append("La cantidad no puede ser negativa.")
+    except ValueError:
+        errores.append("La cantidad debe ser un número entero.")
+
+    try:
+        precio = float(data.get('precio', ''))
+        if precio < 0:
+            errores.append("El precio no puede ser negativo.")
+    except ValueError:
+        errores.append("El precio debe ser un número válido.")
+
+    try:
+        fecha_caducidad = datetime.strptime(data.get('fecha_caducidad', ''), "%Y-%m-%d")
+    except ValueError:
+        errores.append("La fecha debe tener el formato YYYY-MM-DD.")
+
+    categoria_id = data.get('categoria_ID')
+    if not categoria_id or not categoria_id.isdigit():
+        errores.append("La categoría debe ser un número válido.")
+
+    if errores:
+        for error in errores:
+            flash(error, "danger")  
+        return redirect(url_for('productosDB'))  
+
     nuevo_producto = Producto(
-        categoria_FK=data['categoria_ID'],
-        nombre_producto=data['nombre_producto'],
-        cantidad=int(data['cantidad']),
-        precio=float(data['precio']),
-        fecha_caducidad=datetime.strptime(data['fecha_caducidad'], "%Y-%m-%d")
+        categoria_FK=int(categoria_id),
+        nombre_producto=nombre,
+        cantidad=cantidad,
+        precio=precio,
+        fecha_caducidad=fecha_caducidad
     )
     db.session.add(nuevo_producto)
     db.session.commit()
 
+    flash("Producto creado exitosamente", "success")
     return redirect(url_for('productosDB'))
 
 @app.route('/productosDB/update/<int:id>', methods=['POST'])
