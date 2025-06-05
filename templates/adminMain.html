@@ -66,27 +66,22 @@
                     <th>Días restantes</th>
                 </tr>
             </thead>
-            <tbody>
-                {% if productos %}
-                    {% for producto in productos %}
-                    <tr class="{% if producto.dias_restantes < 7 %}table-danger{% endif %}">
-                        <td>{{ producto.nombre }}</td>
-                        <td>{{ producto.fecha_caducidad.strftime("%d/%m/%Y") }}</td>
-                        <td>
-                            {% if producto.dias_restantes < 7 %}
-                                <span class="badge bg-danger">{{ producto.dias_restantes }} días</span>
-                            {% else %}
-                                <span class="badge bg-success">{{ producto.dias_restantes }} días</span>
-                            {% endif %}
-                        </td>
-                    </tr>
-                    {% endfor %}
-                {% else %}
-                    <tr>
-                        <td colspan="3" class="text-center text-muted">No hay productos próximos a caducar</td>
-                    </tr>
-                {% endif %}
-            </tbody>
+        <tbody>
+            {% for producto in productos %}
+            <tr class="{% if producto.dias_restantes < 7 %}table-danger{% endif %}">
+                <td>{{ producto.nombre }}</td>
+                <td>{{ producto.fecha_caducidad.strftime("%d/%m/%Y") }}</td>
+                <td>
+                    {% if producto.dias_restantes < 7 %}
+                        <span class="badge bg-danger">{{ producto.dias_restantes }} días</span>
+                    {% else %}
+                        <span class="badge bg-success">{{ producto.dias_restantes }} días</span>
+                    {% endif %}
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+
         </table>
     </div>
     
@@ -101,6 +96,7 @@
                 "language": {
                     "lengthMenu": "Mostrar _MENU_ productos por página",
                     "zeroRecords": "No se encontraron productos",
+                    "emptyTable":"No hay productos próximos a caducar",
                     "info": "Mostrando página _PAGE_ de _PAGES_",
                     "infoEmpty": "No hay productos disponibles",
                     "infoFiltered": "(filtrado de _MAX_ productos en total)",
