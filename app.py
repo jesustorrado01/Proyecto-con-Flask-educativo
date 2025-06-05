@@ -234,11 +234,18 @@ def edit_producto(id):
 @login_required
 def delete_producto(id):
     if Rol.query.get(current_user.rol_FK).rol_usuario != "administrador":
-        return jsonify({"error": "Acceso no autorizado"}), 403
+        flash("Acceso no autorizado." , "danger")
+        return redirect(url_for("productosDB"))
     
     producto = Producto.query.get_or_404(id)
-    db.session.delete(producto)
-    db.session.commit()
+
+    try:
+        db.session.delete(producto)
+        db.session.commit()
+        flash(f"Producto '{producto.nombre_producto}' eliminado exitosamente.", "success")
+    except Exception as e:
+        db.session.rollback()
+        flash("Ocurrió un error al eliminar el producto. Inténtelo mas más tarde", "danger")
 
     return redirect(url_for('productosDB'))
 
