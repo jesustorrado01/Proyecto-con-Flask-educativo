@@ -63,6 +63,18 @@
         </table>
 
         <h3 class="mt-5"><i class="fas fa-user-plus"></i> Agregar Nuevo Empleado</h3>
+
+        {% with mensajes = get_flashed_messages(with_categories=true) %}
+            {% if mensajes %}
+                {% for categoria, mensaje in mensajes %}
+                    <div class="alert alert-{{ categoria }} alert-dismissible fade show" role="alert">
+                        {{ mensaje }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Cerrar"></button>
+                    </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
         <form action="{{ url_for('create_empleado') }}" method="POST">
             <div class="row">
                 <div class="col-md-6 mb-3">

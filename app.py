@@ -264,13 +264,35 @@ def empleadosDB():
 @login_required
 def create_empleado():
     if Rol.query.get(current_user.rol_FK).rol_usuario != "administrador":
-        return jsonify({"error": "Acceso no autorizado"}), 403
+        flash ("Acceso no autorizado", "danger")
+        return redirect(url_for("empleadosDB"))
         
     data = request.form
 
-    usuario_existente = Usuario.query.filter_by(usuario=data['usuario']).first()
-    if usuario_existente:
-        return jsonify({"Error": "El nombre de usuario ya esta en uso. Por favor, elige otro"}), 400
+    if Usuario.query.filter_by(usuario=data['usuario']).first():
+        flash ("El nombre de usuario ya está en uso", "danger")
+        return redirect(url_for('empleadosDB'))
+    
+    if Usuario.query.filter_by(documento_identificacion=data['documento_identificacion']).first():
+        flash ("El número de documento ya está registrado", "danger")
+        return redirect(url_for('empleadosDB'))
+    
+    if len(data['contraseña']) < 6:
+        flash ("La contraseña debe tener al menos 6 caracteres", "danger")
+        return redirect(url_for('empleadosDB'))
+    
+    if not data['telefono'].isdigit() or len(data['telefono']) < 7:
+        flash ("El teléfono debe contener solo numeros y ser valido", "danger")
+        return redirect(url_for('empleadosDB'))
+    
+    try:
+        fecha_contratacion = datetime.strptime(data['fecha_contratacion'], "%Y-%m-%d")
+        if fecha_contratacion > datetime.today():
+            flash ("La fecha de contratación no puede ser futura", "danger")
+            return redirect(url_for("empleadosDB"))
+    except ValueError:
+        flash ("Fecha de contratación inválida", "danger")
+        return redirect(url_for("empleadosDB"))
     
     nuevo_usuario = Usuario(
         usuario = data['usuario'],
