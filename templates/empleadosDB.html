@@ -103,7 +103,9 @@
                 </div>
                 <div class="col-md-6 mb-3">
                     <label for="email" class="form-label">Email:</label>
-                    <input type="email" id="email" name="email" class="form-control" required>
+                    <input type="email" id="email" name="email" class="form-control" required
+                        pattern="^[\w\.-]+@gmail\.com$"
+                        title="Solo se permiten correos de Gmail con formato válido (ej. tucorreo@gmail.com)">
                 </div>
                 <div class="col-md-6 mb-3">
                     <label for="telefono" class="form-label">Teléfono:</label>

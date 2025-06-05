@@ -14,6 +14,7 @@ from reportlab.lib.styles import getSampleStyleSheet
 from datetime import date, datetime, timezone, timedelta
 import os
 from io import BytesIO
+import re
 
 app = Flask(__name__)
 
@@ -294,6 +295,12 @@ def create_empleado():
         flash ("Fecha de contratación inválida", "danger")
         return redirect(url_for("empleadosDB"))
     
+    email = data['email']
+    email_regex = r'^[\w\.-]+@gmail\.com$'
+    if not re.match(email_regex, email):
+        flash ("Solo se permiten correos de tipo Gmail con formato válido (ej. tucorreo@gmail.com).", "danger")
+        return redirect(url_for('empleadosDB'))
+
     nuevo_usuario = Usuario(
         usuario = data['usuario'],
         contraseña=bcrypt.generate_password_hash(data['contraseña']).decode('utf-8'),
