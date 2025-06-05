@@ -140,6 +140,12 @@ def create_producto():
     if not categoria_id or not categoria_id.isdigit():
         errores.append("La categoría debe ser un número válido.")
 
+    producto_existente = Producto.query.filter_by(
+        nombre_producto=nombre, categoria_FK=int(categoria_id)
+    ).first()
+    if producto_existente:
+        errores.append("Ya existe un producto con ese nombre")
+
     if errores:
         for error in errores:
             flash(error, "danger")  
