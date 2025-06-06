@@ -515,7 +515,7 @@ def generar_factura():
         pdf_stream.seek(0)
         response = make_response(pdf_stream.read())
         response.headers['Content-Type'] = 'application/pdf'
-        response.headers['Content-Disposition'] = f'attachment; filename=factura_{factura_id}.pdf'
+        response.headers['Content-Disposition'] = f'attachment; filename="Drogueía Farma Plus Junior".pdf'
         return response
 
     return redirect(url_for('empleadoMain'))
@@ -560,7 +560,6 @@ def generar_pdf(factura, productos, output_stream):
     elements.append(Spacer(1, 20))
     elements.append(Paragraph("¡Gracias por su compra!", styles['Heading2']))
 
-    # Generar PDF
     doc.build(elements)
 
 @app.route('/historialVentas')
