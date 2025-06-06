@@ -274,7 +274,7 @@ def create_empleado():
         flash ("El nombre de usuario ya está en uso", "danger")
         return redirect(url_for('empleadosDB'))
     
-    if Usuario.query.filter_by(documento_identificacion=data['documento_identificacion']).first():
+    if Empleado.query.filter_by(documento_identificacion=data['documento_identificacion']).first():
         flash ("El número de documento ya está registrado", "danger")
         return redirect(url_for('empleadosDB'))
     
@@ -336,6 +336,32 @@ def update_empleados(id):
     empleado = Empleado.query.get_or_404(id)
     data = request.form
 
+    campos_obligatorios = ['nombre1', 'apellido1', 'documento_identificacion', 'direccion', 'email', 'telefono', 'fecha_contratacion', 'estado']
+    for campo in campos_obligatorios:
+        if not data.get(campo):
+            flash(f"El campo '{campo}' es obligatorio.", "danger")
+            return redirect(url_for('edit_empleado', id=id))
+
+    if not re.match(r"[^@]+@[^@]+\.[^@]+", data['email']):
+        flash("El correo electrónico no es válido.", "danger")
+        return redirect(url_for('edit_empleado', id=id))
+
+    doc_existente = Empleado.query.filter(
+        Empleado.documento_identificacion == data['documento_identificacion'],
+        Empleado.empleado_ID != id
+    ).first()
+    if doc_existente:
+        flash("Este documento ya está registrado en otro empleado.", "danger")
+        return redirect(url_for('edit_empleado', id=id))
+
+    email_existente = Empleado.query.filter(
+        Empleado.email == data['email'],
+        Empleado.empleado_ID != id
+    ).first()
+    if email_existente:
+        flash("Este correo electrónico ya está en uso por otro empleado.", "danger")
+        return redirect(url_for('edit_empleado', id=id))
+
     empleado.nombre1 = data['nombre1']
     empleado.nombre2 = data.get('nombre2')
     empleado.apellido1 = data['apellido1']
@@ -348,8 +374,9 @@ def update_empleados(id):
     empleado.estado = data['estado']
 
     db.session.commit()
-
+    flash("Empleado actualizado correctamente.", "success")
     return redirect(url_for('empleadosDB'))
+
 
 @app.route('/empleadosDB/edit/<int:id>', methods=['GET'])
 @login_required
