@@ -331,7 +331,9 @@ def create_empleado():
 @login_required
 def update_empleados(id):
     if Rol.query.get(current_user.rol_FK).rol_usuario != "administrador":
-        return jsonify({"error": "Acceso no autorizado"}), 403
+        flash ('Acceso no autorizado', 'danger')
+        return redirect(url_for("empleadosDB"))
+
 
     empleado = Empleado.query.get_or_404(id)
     data = request.form
