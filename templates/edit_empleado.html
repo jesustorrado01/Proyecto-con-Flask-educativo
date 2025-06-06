@@ -26,12 +26,16 @@
     <form action="{{ url_for('update_empleados', id=empleado.empleado_ID) }}" method="POST">
         <div class="mb-3">
             <label for="nombre1" class="form-label">Nombre:</label>
-            <input type="text" class="form-control" id="nombre1" name="nombre1" value="{{ empleado.nombre1 }}" required>
+            <input type="text" class="form-control" id="nombre1" name="nombre1" value="{{ empleado.nombre1 }}" required
+                pattern="[A-Za-zÁÉÍÓÚáéíóúñÑ\s]+"
+                title="Solo se permiten lentras y espacios">
         </div>
 
         <div class="mb-3">
             <label for="apellido1" class="form-label">Apellido:</label>
-            <input type="text" class="form-control" id="apellido1" name="apellido1" value="{{ empleado.apellido1 }}" required>
+            <input type="text" class="form-control" id="apellido1" name="apellido1" value="{{ empleado.apellido1 }}" required
+                pattern="[A-Za-zÁÉÍÓÚáéíóúñÑ\s]+"
+                title="Solo se permiten letras y espacios">
         </div>
 
         <div class="mb-3">
