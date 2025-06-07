@@ -1,5 +1,8 @@
+import os
 from flask_sqlalchemy import SQLAlchemy
 
-DATABASE_URL = "mysql+pymysql://root:@localhost:3306/pro"
+basedir = os.path.abspath(os.path.dirname(__file__))
+
+DATABASE_URL = f"sqlite:///{os.path.join(basedir, 'pro.db')}"
 
 db = SQLAlchemy()

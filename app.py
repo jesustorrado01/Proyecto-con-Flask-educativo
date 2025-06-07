@@ -15,6 +15,9 @@ from datetime import date, datetime, timezone, timedelta
 import os
 from io import BytesIO
 import re
+from sqlalchemy import event
+from sqlalchemy.engine import Engine
+import sqlite3
 
 app = Flask(__name__)
 
@@ -26,6 +29,13 @@ db.init_app(app)
 bcrypt = Bcrypt(app)
 login_manager = LoginManager(app)
 login_manager.login_view = 'login'
+
+@event.listens_for(Engine, "connect")
+def set_sqlite_pragma(dbapi_connection, connection_record):
+    if isinstance(dbapi_connection, sqlite3.Connection):
+        cursor = dbapi_connection.cursor()
+        cursor.execute("PRAGMA foreign_keys=ON;")
+        cursor.close()
 
 @login_manager.user_loader
 def load_user(user_id):
