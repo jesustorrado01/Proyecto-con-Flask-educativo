@@ -23,6 +23,7 @@ class Usuario(db.Model, UserMixin):
     rol_FK = db.Column(db.Integer, db.ForeignKey('rol.rol_ID', ondelete='CASCADE'), nullable=True)
     usuario = db.Column(db.String(80), unique=True, nullable=False)
     contraseña = db.Column(db.String(255), nullable=False)
+    email = db.Column(db.String(150), unique=True,  nullable=True)
     estado = db.Column(db.Enum('activo', 'inactivo'), default='activo')
 
     def get_id(self):

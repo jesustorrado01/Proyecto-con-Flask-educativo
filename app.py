@@ -15,6 +15,9 @@ from datetime import date, datetime, timezone, timedelta
 import os
 from io import BytesIO
 import re
+from email.mime.text import MIMEText
+import smtplib
+import random, string
 from sqlalchemy import event
 from sqlalchemy.engine import Engine
 import sqlite3
@@ -306,9 +309,9 @@ def create_empleado():
         return redirect(url_for("empleadosDB"))
     
     email = data['email']
-    email_regex = r'^[\w\.-]+@gmail\.com$'
+    email_regex = r'^[\w\.-]+@(gmail|hotmail|outlook|yahoo)\.com$'
     if not re.match(email_regex, email):
-        flash ("Solo se permiten correos de tipo Gmail con formato válido (ej. tucorreo@gmail.com).", "danger")
+        flash("Solo se permiten correos de tipo Gmail, Hotmail, Outlook o Yahoo con formato válido (ej. tucorreo@gmail.com).", "danger")
         return redirect(url_for('empleadosDB'))
 
     nuevo_usuario = Usuario(
@@ -354,8 +357,8 @@ def update_empleados(id):
             flash(f"El campo '{campo}' es obligatorio.", "danger")
             return redirect(url_for('edit_empleado', id=id))
 
-    if not re.match(r"[^@]+@[^@]+\.[^@]+", data['email']):
-        flash("El correo electrónico no es válido.", "danger")
+    if not re.match(r"^[a-zA-Z0-9_.+-]+@(gmail\.com|hotmail\.com|outlook\.com)$", data['email']):
+        flash("El correo electrónico debe ser válido y pertenecer a dominios permitidos (gmail.com, hotmail.com, outlook.com).", "danger")
         return redirect(url_for('edit_empleado', id=id))
 
     doc_existente = Empleado.query.filter(
@@ -592,6 +595,95 @@ def historialVentas():
     
     return render_template('historialVentas.html', productos=productos_vendidos)
 
+@app.route('/olvido_contraseña', methods=['GET', 'POST'])
+def olvidar_contraseña():
+    if request.method == 'POST':
+        nombre_usuario = request.form['usuario'].strip()  
+
+        if not nombre_usuario:
+            flash("Debe ingresar un nombre de usuario.", "warning")
+            return redirect(url_for('olvidar_contraseña'))
+
+        if not nombre_usuario.isalnum():
+            flash("El nombre de usuario solo debe contener letras y números.", "warning")
+            return redirect(url_for('olvidar_contraseña'))
+
+        usuario = Usuario.query.filter_by(usuario=nombre_usuario).first()
+
+        if not usuario:
+            flash("Usuario no encontrado.", "danger")
+            return redirect(url_for('olvidar_contraseña'))
+
+        if usuario.estado != 'activo':
+            flash("Este usuario está inactivo. Contacta al administrador.", "warning")
+            return redirect(url_for('olvidar_contraseña'))
+
+        if usuario.rol_FK != 1:
+            flash("Solo los administradores pueden recuperar contraseña por este método.", "danger")
+            return redirect(url_for('olvidar_contraseña'))
+        
+        if not re.match(r'^[a-zA-Z0-9_.-]+$', nombre_usuario):
+            flash("El nombre de usuario contiene caracteres inválidos.", "warning")
+            return redirect(url_for('olvidar_contraseña'))
+
+        if not usuario.email:
+            flash("El administrador no tiene un correo registrado.", "warning")
+            return redirect(url_for('olvidar_contraseña'))
+
+        nueva_pass = ''.join(random.choices(string.ascii_letters + string.digits, k=10))
+        hashed_pass = bcrypt.generate_password_hash(nueva_pass).decode('utf-8')
+        usuario.contraseña = hashed_pass
+        db.session.commit()
+
+        if enviar_correo(usuario.email, nueva_pass):
+            flash("Se ha enviado una nueva contraseña al correo del administrador.", "success")
+            return redirect(url_for('login'))
+        else:
+            flash("Error al enviar el correo. Intenta más tarde.", "danger")
+            return redirect(url_for('olvidar_contraseña'))
+
+    return render_template('olvido_contraseña.html')
+
+    
+
+def enviar_correo(destinatario, nueva_contraseña):
+    import smtplib
+    from email.mime.text import MIMEText
+
+    smtp_servidor = 'smtp.gmail.com'
+    smtp_puerto = 587
+    remitente = 'emiliojesus013@gmail.com'  
+    contraseña_app = 'lddb itiy ssuh fshm'  
+
+    asunto = "Recuperación de contraseña - Sistema de Administración"
+    cuerpo = f"""
+    Hola,
+
+    Se ha solicitado una nueva contraseña para tu cuenta de administrador.
+
+    Tu nueva contraseña es: {nueva_contraseña}
+
+    Por favor, inicia sesión y cambia esta contraseña lo antes posible por seguridad.
+
+    Atentamente,
+    El equipo de soporte
+    """
+
+    mensaje = MIMEText(cuerpo)
+    mensaje['Subject'] = asunto
+    mensaje['From'] = remitente
+    mensaje['To'] = destinatario
+
+    try:
+        servidor = smtplib.SMTP(smtp_servidor, smtp_puerto)
+        servidor.starttls()
+        servidor.login(remitente, contraseña_app)
+        servidor.send_message(mensaje)
+        servidor.quit()
+        return True
+    except Exception as e:
+        print(f"Error al enviar correo: {e}")
+        return False
 
 @app.route('/logout')
 @login_required

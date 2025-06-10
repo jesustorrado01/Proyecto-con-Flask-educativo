@@ -18,8 +18,9 @@ def init_db():
         # **2. Insertar Usuarios**
         usuario_admin = Usuario(
             usuario="admin",
-            contraseña=bcrypt.generate_password_hash("admin123"),  # Contraseña encriptada
-            rol_FK=rol_admin.rol_ID
+            contraseña=bcrypt.generate_password_hash("admin123"),
+            rol_FK=rol_admin.rol_ID,
+            email="jberriotorrado@gmail.com" 
         )
         usuario_empleado = Usuario(
             usuario="empleado",
