@@ -435,8 +435,17 @@ def productoYfactura():
         cantidad = int(request.form['cantidad'])
 
         producto = Producto.query.get(producto_id)
-        if not producto or cantidad <= 0 or producto.cantidad < cantidad:
-            flash('Cantidad inválida o producto sin stock suficiente', 'danger')
+
+        if not producto:
+            flash('El producto seleccionado no existe.', 'danger')
+            return redirect(url_for('productoYfactura'))
+
+        if cantidad <= 0:
+            flash('La cantidad debe ser mayor a cero.', 'danger')
+            return redirect(url_for('productoYfactura'))
+
+        if producto.cantidad < cantidad:
+            flash(f'No hay suficiente stock. Disponible: {producto.cantidad}', 'danger')
             return redirect(url_for('productoYfactura'))
 
         producto.cantidad -= cantidad
@@ -459,11 +468,11 @@ def productoYfactura():
         })
         session['productos_comprados'] = productos_comprados  
 
+        flash('Producto agregado correctamente.', 'success')
         return redirect(url_for('productoYfactura'))
 
     productos = Producto.query.all()
     return render_template('registro_compra.html', productos=productos)
-
 
 @app.route('/vaciar_carrito')
 @login_required
