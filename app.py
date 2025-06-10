@@ -5,12 +5,12 @@ from flask_bcrypt import Bcrypt
 from models import Rol, Categoria, Usuario, Empleado, Producto, Inventario, Transaccion, Laboratorios, Factura, FacturaDetalle
 from config import DATABASE_URL, db
 from datetime import datetime
+from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle
+from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib.pagesizes import letter
-from reportlab.pdfgen import canvas
-from reportlab.lib import colors
+from reportlab.lib.enums import TA_CENTER, TA_LEFT
 from reportlab.lib.units import inch
-from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer
-from reportlab.lib.styles import getSampleStyleSheet
+from reportlab.lib import colors
 from datetime import date, datetime, timezone, timedelta
 import os
 from io import BytesIO
@@ -481,31 +481,40 @@ def vaciar_carrito():
     flash('Carrito vaciado correctamente.', 'info')
     return redirect(url_for('productoYfactura'))
 
-
 @app.route('/confirmar_factura', methods=['GET', 'POST'])
 @login_required
 def confirmar_factura():
     if request.method == 'POST':
-        desicion = request.form.get('desicion')
-        if desicion == 'si':
-            cancelada = 'si'
-            return redirect(url_for('generar_factura', cancelada=cancelada))
-        elif desicion == 'no':
-            cancelada = 'no'
-            return redirect(url_for('generar_factura', cancelada=cancelada))
-        
+        nombre = request.form.get('nombre_cliente')
+        telefono = request.form.get('telefono_cliente')
+        cedula = request.form.get('cedula_cliente')
+        total_iva = float(request.form.get('total_con_iva'))
+
+        session['cliente_info'] = {
+            'nombre': nombre,
+            'telefono': telefono,
+            'cedula': cedula,
+            'total_con_iva': total_iva
+        }
+
+        return redirect(url_for('generar_factura', cancelada='si'))
+
     return render_template('confirmar_factura.html')
 
-@app.route('/generar_factura', methods=['GET', 'POST'])
+@app.route('/generar_factura', methods=['GET'])
 @login_required
 def generar_factura():
-    cancelada = request.args.get('cancelada')  
-
     if 'productos_comprados' not in session or not session['productos_comprados']:
+        flash('No hay productos agregados.', 'danger')
+        return redirect(url_for('productoYfactura'))
+
+    cliente_info = session.pop('cliente_info', None)
+    if not cliente_info:
+        flash('Información del cliente faltante. Por favor, ingresa los datos.', 'danger')
         return redirect(url_for('productoYfactura'))
 
     productos = session.pop('productos_comprados')
-    total = sum(p['subtotal'] for p in productos)
+    total = cliente_info['total_con_iva']
 
     empleado = Empleado.query.filter_by(usuario_FK=current_user.usuario_ID).first()
     nueva_factura = Factura(
@@ -529,60 +538,125 @@ def generar_factura():
         db.session.add(detalle)
     db.session.commit()
 
-    if cancelada == 'si':
-        factura_id = nueva_factura.factura_ID
-        pdf_stream = BytesIO()
-        generar_pdf(nueva_factura, productos, pdf_stream)
+    # Generar y retornar el PDF
+    pdf_stream = BytesIO()
+    generar_pdf(nueva_factura, productos, pdf_stream, cliente_info)
+    pdf_stream.seek(0)
 
-        pdf_stream.seek(0)
-        response = make_response(pdf_stream.read())
-        response.headers['Content-Type'] = 'application/pdf'
-        response.headers['Content-Disposition'] = f'attachment; filename="Drogueía Farma Plus Junior".pdf'
-        return response
-
-    return redirect(url_for('empleadoMain'))
+    response = make_response(pdf_stream.read())
+    response.headers['Content-Type'] = 'application/pdf'
+    response.headers['Content-Disposition'] = 'attachment; filename="Factura_FarmaPlus.pdf"'
+    return response
 
 
-def generar_pdf(factura, productos, output_stream):
+def generar_pdf(factura, productos, output_stream, cliente_info):
     doc = SimpleDocTemplate(output_stream, pagesize=letter)
     elements = []
     styles = getSampleStyleSheet()
 
-    elements.append(Paragraph(f"<b>Factura Nº {factura.factura_ID}</b>", styles['Title']))
-    elements.append(Spacer(1, 12))
+    # Estilos personalizados
+    title_style = ParagraphStyle(
+        name='TitleCenter',
+        parent=styles['Title'],
+        alignment=TA_CENTER,
+        fontSize=16,
+        leading=22,
+        spaceAfter=12
+    )
+
+    header_style = ParagraphStyle(
+        name='Header',
+        parent=styles['Heading2'],
+        alignment=TA_LEFT,
+        spaceBefore=12,
+        spaceAfter=6
+    )
+
+    normal_bold = ParagraphStyle(
+        name='NormalBold',
+        parent=styles['Normal'],
+        fontName='Helvetica-Bold'
+    )
+
+    # Encabezado
+    elements.append(Paragraph("Droguería Farma Plus Junior", title_style))
+    elements.append(Paragraph(f"Factura Nº {factura.factura_ID}", styles['Normal']))
     elements.append(Paragraph(f"Fecha: {factura.fecha.strftime('%Y-%m-%d %H:%M:%S')}", styles['Normal']))
-    elements.append(Paragraph(f"Total: <b>${factura.total:.2f}</b>", styles['Normal']))
     elements.append(Paragraph(f"Atendido por: {factura.empleado.nombre1} {factura.empleado.apellido1}", styles['Normal']))
+    elements.append(Spacer(1, 12))
+
+    # Información del cliente
+    elements.append(Paragraph("Información del Cliente", header_style))
+
+    cliente_data = [
+        ["Nombre:", cliente_info.get('nombre', 'N/A')],
+        ["Teléfono:", cliente_info.get('telefono', 'N/A')],
+        ["Cédula:", cliente_info.get('cedula', 'N/A')]
+    ]
+    cliente_table = Table(cliente_data, colWidths=[1.2 * inch, 4.8 * inch])
+    cliente_table.setStyle(TableStyle([
+        ('VALIGN', (0, 0), (-1, -1), 'TOP'),
+        ('FONTNAME', (0, 0), (-1, -1), 'Helvetica'),
+        ('FONTSIZE', (0, 0), (-1, -1), 10),
+        ('BOTTOMPADDING', (0, 0), (-1, -1), 4)
+    ]))
+    elements.append(cliente_table)
     elements.append(Spacer(1, 20))
 
-    data = [['Producto', 'Cantidad', 'Precio Unitario', 'Subtotal']]
+    # Detalles de productos
+    elements.append(Paragraph("Detalle de la Compra", header_style))
+
+    table_data = [['Producto', 'Cantidad', 'Precio Unitario', 'Subtotal']]
     for p in productos:
-        data.append([
+        table_data.append([
             p["nombre_producto"],
             str(p["cantidad"]),
             f"${p['precio_unitario']:.2f}",
             f"${p['subtotal']:.2f}"
         ])
 
-    table = Table(data, colWidths=[2.5*inch, 1*inch, 1.2*inch, 1.2*inch])
+    product_table = Table(table_data, colWidths=[2.5 * inch, 1 * inch, 1.2 * inch, 1.2 * inch])
+    product_table.setStyle(TableStyle([
+        ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor("#4B8BBE")),
+        ('TEXTCOLOR', (0, 0), (-1, 0), colors.white),
+        ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+        ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+        ('FONTSIZE', (0, 0), (-1, 0), 11),
+        ('BOTTOMPADDING', (0, 0), (-1, 0), 8),
+        ('BACKGROUND', (0, 1), (-1, -1), colors.whitesmoke),
+        ('GRID', (0, 0), (-1, -1), 0.5, colors.grey),
+    ]))
+    elements.append(product_table)
+    elements.append(Spacer(1, 16))
 
-    style = TableStyle([
-        ('BACKGROUND', (0,0), (-1,0), colors.HexColor("#4B8BBE")),
-        ('TEXTCOLOR', (0,0), (-1,0), colors.white),
-        ('ALIGN', (0,0), (-1,-1), 'CENTER'),
-        ('FONTNAME', (0,0), (-1,0), 'Helvetica-Bold'),
-        ('FONTSIZE', (0,0), (-1,0), 12),
-        ('BOTTOMPADDING', (0,0), (-1,0), 10),
-        ('BACKGROUND', (0,1), (-1,-1), colors.whitesmoke),
-        ('GRID', (0,0), (-1,-1), 0.5, colors.grey),
-    ])
-    table.setStyle(style)
+    # Totales
+    subtotal = sum(p["subtotal"] for p in productos)
+    iva = subtotal * 0.19
+    total_con_iva = subtotal + iva
 
-    elements.append(table)
-    elements.append(Spacer(1, 20))
+    totales_data = [
+        ["Subtotal:", f"${subtotal:.2f}"],
+        ["IVA (19%):", f"${iva:.2f}"],
+        ["Total con IVA:", f"${total_con_iva:.2f}"]
+    ]
+    totales_table = Table(totales_data, colWidths=[4.3 * inch, 1.6 * inch], hAlign='RIGHT')
+    totales_table.setStyle(TableStyle([
+        ('FONTNAME', (0, 0), (-1, -1), 'Helvetica'),
+        ('FONTSIZE', (0, 0), (-1, -1), 11),
+        ('ALIGN', (1, 0), (1, -1), 'RIGHT'),
+        ('BOTTOMPADDING', (0, 0), (-1, -1), 4),
+        ('TEXTCOLOR', (-2, -1), (-1, -1), colors.black),
+        ('FONTNAME', (-1, -1), (-1, -1), 'Helvetica-Bold'),
+    ]))
+    elements.append(totales_table)
+    elements.append(Spacer(1, 30))
+
+    # Mensaje final
     elements.append(Paragraph("¡Gracias por su compra!", styles['Heading2']))
 
+    # Construir el documento
     doc.build(elements)
+
 
 @app.route('/historialVentas')
 @login_required
