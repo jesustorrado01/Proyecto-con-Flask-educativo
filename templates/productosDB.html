@@ -5,14 +5,16 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Gestión de productos</title>
 
-    <!-- Bootstrap CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
 
-    <!-- DataTables CSS -->
     <link href="https://cdn.datatables.net/1.11.5/css/jquery.dataTables.min.css" rel="stylesheet">
 
-    <!-- Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+    <style>
+        .is-invalid + .invalid-feedback {
+            display: block;
+        }
+    </style>
 </head>
 <body>
 
@@ -75,32 +77,38 @@
             {% endif %}
         {% endwith %}
 
-        <form action="{{ url_for('create_producto') }}" method="POST">
+        <form action="{{ url_for('create_producto') }}" method="POST" id="formCrearProducto">
             <div class="mb-3">
                 <label for="nombre_producto" class="form-label">Nombre:</label>
                 <input type="text" name="nombre_producto" id="nombre_producto" class="form-control" required>
+                <div class="invalid-feedback"></div>
             </div>
             <div class="mb-3">
                 <label for="cantidad" class="form-label">Cantidad:</label>
-                <input type="number" name="cantidad" id="cantidad" class="form-control" required>
+                <input type="number" name="cantidad" id="cantidad" class="form-control" required min="0">
+                <div class="invalid-feedback"></div>
             </div>
             <div class="mb-3">
                 <label for="precio" class="form-label">Precio:</label>
-                <input type="number" step="0.01" name="precio" id="precio" class="form-control" required>
+                <input type="number" step="0.01" name="precio" id="precio" class="form-control" required min="0">
+                <div class="invalid-feedback"></div>
             </div>
             <div class="mb-3">
                 <label for="fecha_caducidad" class="form-label">Fecha de caducidad:</label>
                 <input type="date" name="fecha_caducidad" id="fecha_caducidad" class="form-control" required>
+                <div class="invalid-feedback"></div>
             </div>
             <div class="mb-3">
                 <label for="categoria_ID" class="form-label">Categoría:</label>
                 <select name="categoria_ID" id="categoria_ID" class="form-select" required>
+                    <option value="" disabled selected>Selecciona una categoría</option> {# Opción por defecto #}
                     {% for categoria in categorias %}
                     <option value="{{ categoria.categoria_ID }}">{{ categoria.nombre_categoria }}</option>
                     {% endfor %}
                 </select>
+                <div class="invalid-feedback"></div>
             </div>
-            <button type="submit" class="btn btn-success"><i class="fas fa-plus"></i> Agregar producto</button>
+            <button type="submit" class="btn btn-success" id="btnAgregarProducto" disabled><i class="fas fa-plus"></i> Agregar producto</button>
         </form>
     </div>
 
@@ -115,6 +123,130 @@
                     url: 'https://cdn.datatables.net/plug-ins/1.11.5/i18n/es-ES.json'
                 },
                 responsive: true
+            });
+
+            const form = document.getElementById('formCrearProducto');
+            // Seleccionamos todos los inputs y el select que son requeridos
+            const inputs = form.querySelectorAll('input[required], select[required]');
+            const btnAgregar = document.getElementById('btnAgregarProducto');
+
+            function validateField(input) {
+                const feedback = input.nextElementSibling;
+                let isValid = true;
+                let errorMessage = '';
+
+                // Validación de campos vacíos
+                if (input.value.trim() === '' || (input.tagName === 'SELECT' && input.value === '')) {
+                    isValid = false;
+                    errorMessage = 'Este campo es obligatorio.';
+                } else {
+                    switch (input.id) {
+                        case 'nombre_producto':
+                            // Validar que el nombre solo contenga letras y espacios
+                            if (!/^[a-zA-Z\s]+$/.test(input.value)) {
+                                isValid = false;
+                                errorMessage = 'El nombre del producto solo debe contener letras y espacios.';
+                            }
+                            break;
+                        case 'cantidad':
+                            // Validar que la cantidad sea un número entero no negativo
+                            const cantidad = parseInt(input.value);
+                            if (isNaN(cantidad) || cantidad < 0) {
+                                isValid = false;
+                                errorMessage = 'La cantidad debe ser un número entero no negativo.';
+                            }
+                            break;
+                        case 'precio':
+                            // Validar que el precio sea un número no negativo
+                            const precio = parseFloat(input.value);
+                            if (isNaN(precio) || precio < 0) {
+                                isValid = false;
+                                errorMessage = 'El precio debe ser un número no negativo.';
+                            }
+                            break;
+                        case 'fecha_caducidad':
+                            // Validar que la fecha de caducidad no sea pasada
+                            const today = new Date();
+                            today.setHours(0, 0, 0, 0); // Para comparar solo la fecha
+                            const caducidadDate = new Date(input.value);
+                            if (caducidadDate < today) {
+                                isValid = false;
+                                errorMessage = 'La fecha de caducidad no puede ser una fecha pasada.';
+                            }
+                            break;
+                        case 'categoria_ID':
+                            if (input.value === "") { // Asegura que se haya seleccionado una opción válida
+                                isValid = false;
+                                errorMessage = 'Por favor, selecciona una categoría.';
+                            }
+                            break;
+                    }
+                }
+
+                if (isValid) {
+                    input.classList.remove('is-invalid');
+                    input.classList.add('is-valid');
+                    feedback.textContent = '';
+                } else {
+                    input.classList.remove('is-valid');
+                    input.classList.add('is-invalid');
+                    feedback.textContent = errorMessage;
+                }
+                return isValid;
+            }
+
+            function validateForm() {
+                let allValid = true;
+                inputs.forEach(input => {
+                    // Solo validar campos vacíos al principio si no se ha interactuado
+                    // O si ya está en estado inválido (ej. por un submit previo)
+                    if (input.classList.contains('is-invalid') || input.value.trim() !== '' || input.tagName === 'SELECT' && input.value !== '') {
+                        if (!validateField(input)) {
+                            allValid = false;
+                        }
+                    } else { // Si el campo está vacío y no ha sido tocado
+                        allValid = false; // El formulario no es válido
+                    }
+                });
+                btnAgregar.disabled = !allValid;
+                return allValid;
+            }
+
+            // Validar al escribir, cambiar o al salir del campo
+            inputs.forEach(input => {
+                input.addEventListener('input', () => {
+                    validateField(input);
+                    validateForm(); 
+                });
+                input.addEventListener('change', () => { // Para inputs tipo 'date' y selects
+                    validateField(input);
+                    validateForm();
+                });
+                input.addEventListener('blur', () => { // Para cuando el campo pierde el foco
+                    validateField(input);
+                    validateForm();
+                });
+            });
+
+            // Validar al cargar la página (para deshabilitar el botón si está vacío)
+            validateForm();
+
+            // Interceptar el envío del formulario para una validación final
+            form.addEventListener('submit', function(event) {
+                let formIsValidOnSubmit = true;
+                inputs.forEach(input => {
+                    if (!validateField(input)) { 
+                        formIsValidOnSubmit = false;
+                    }
+                });
+
+                if (!formIsValidOnSubmit) {
+                    event.preventDefault(); 
+                    const firstInvalid = document.querySelector('.is-invalid');
+                    if (firstInvalid) {
+                        firstInvalid.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    }
+                }
             });
         });
     </script>
