@@ -732,8 +732,8 @@ def olvidar_contraseña():
     
 
 def enviar_correo(destinatario, nueva_contraseña):
-    import smtplib
-    from email.mime.text import MIMEText
+    print(f"Intentando enviar correo a: {destinatario}") 
+    print(f"Nueva contraseña a enviar: {nueva_contraseña}")
 
     smtp_servidor = 'smtp.gmail.com'
     smtp_puerto = 587
@@ -765,6 +765,7 @@ def enviar_correo(destinatario, nueva_contraseña):
         servidor.login(remitente, contraseña_app)
         servidor.send_message(mensaje)
         servidor.quit()
+        print("Correo enviado exitosamente")
         return True
     except Exception as e:
         print(f"Error al enviar correo: {e}")
