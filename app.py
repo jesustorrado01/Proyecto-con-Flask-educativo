@@ -5,7 +5,6 @@ from flask_bcrypt import Bcrypt
 from werkzeug.security import generate_password_hash, check_password_hash
 from models import Rol, Categoria, Usuario, Empleado, Producto, Inventario, Transaccion, Laboratorios, Factura, FacturaDetalle
 from config import DATABASE_URL, db
-from datetime import datetime
 from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib.pagesizes import letter
@@ -17,6 +16,7 @@ import os
 from io import BytesIO
 import re
 from email.mime.text import MIMEText
+from email.mime.multipart import MIMEMultipart
 import smtplib
 import random, string
 from sqlalchemy import event
@@ -729,8 +729,6 @@ def olvidar_contraseña():
 
     return render_template('olvido_contraseña.html')
 
-    
-
 def enviar_correo(destinatario, nueva_contraseña):
     print(f"Intentando enviar correo a: {destinatario}") 
     print(f"Nueva contraseña a enviar: {nueva_contraseña}")
@@ -738,32 +736,61 @@ def enviar_correo(destinatario, nueva_contraseña):
     smtp_servidor = 'smtp.gmail.com'
     smtp_puerto = 587
     remitente = 'emiliojesus013@gmail.com'  
-    contraseña_app = 'lddb itiy ssuh fshm'  
+    contraseña_app = 'lddb itiy ssuh fshm' 
 
     asunto = "Recuperación de contraseña - Sistema de Administración"
-    cuerpo = f"""
-    Hola,
-
-    Se ha solicitado una nueva contraseña para tu cuenta de administrador.
-
-    Tu nueva contraseña es: {nueva_contraseña}
-
-    Por favor, inicia sesión y cambia esta contraseña lo antes posible por seguridad.
-
-    Atentamente,
-    El equipo de soporte
+    
+    cuerpo_html = f"""
+    <html>
+    <head>
+        <style>
+            body {{ font-family: Arial, sans-serif; line-height: 1.6; color: #333; }}
+            .container {{ width: 80%; margin: 0 auto; padding: 20px; border: 1px solid #ddd; border-radius: 8px; background-color: #f9f9f9; }}
+            .header {{ background-color: #007bff; color: white; padding: 10px 0; text-align: center; border-radius: 8px 8px 0 0; }}
+            .content {{ padding: 20px; }}
+            .password {{ font-size: 20px; font-weight: bold; color: #dc3545; background-color: #e9ecef; padding: 10px; border-radius: 5px; display: inline-block; margin: 15px 0; }}
+            .footer {{ text-align: center; margin-top: 20px; font-size: 12px; color: #777; }}
+            .btn {{ display: inline-block; background-color: #28a745; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; margin-top: 20px; }}
+        </style>
+    </head>
+    <body>
+        <div class="container">
+            <div class="header">
+                <h2>Recuperación de Contraseña</h2>
+            </div>
+            <div class="content">
+                <p>Hola,</p>
+                <p>Se ha solicitado una nueva contraseña para tu cuenta de administrador en nuestro Sistema de Administración.</p>
+                <p>Tu nueva contraseña temporal es:</p>
+                <p class="password">{nueva_contraseña}</p>
+                <p>Por tu seguridad, te recomendamos encarecidamente que <strong>cambies esta contraseña</strong> inmediatamente después de iniciar sesión.</p>
+                <p>Si no solicitaste este cambio, por favor, ignora este correo.</p>
+            </div>
+            <div class="footer">
+                <p>&copy; {datetime.now().year} El equipo de soporte. Todos los derechos reservados.</p>
+                <p>Este es un correo automático, por favor no respondas a esta dirección.</p>
+            </div>
+        </div>
+    </body>
+    </html>
     """
 
-    mensaje = MIMEText(cuerpo)
+    mensaje = MIMEMultipart('alternative')
     mensaje['Subject'] = asunto
     mensaje['From'] = remitente
     mensaje['To'] = destinatario
+
+    parte_texto = MIMEText(f"Hola,\n\nSe ha solicitado una nueva contraseña para tu cuenta de administrador.\n\nTu nueva contraseña es: {nueva_contraseña}\n\nPor favor, inicia sesión y cambia esta contraseña lo antes posible por seguridad.\n\nAtentamente,\nEl equipo de soporte", 'plain')
+    parte_html = MIMEText(cuerpo_html, 'html')
+
+    mensaje.attach(parte_texto)
+    mensaje.attach(parte_html)
 
     try:
         servidor = smtplib.SMTP(smtp_servidor, smtp_puerto)
         servidor.starttls()
         servidor.login(remitente, contraseña_app)
-        servidor.send_message(mensaje)
+        servidor.send_message(mensaje) 
         servidor.quit()
         print("Correo enviado exitosamente")
         return True
