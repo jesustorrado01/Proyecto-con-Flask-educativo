@@ -425,7 +425,9 @@ def empleadoMain():
         flash ('Acceso no autorizado', 'danger')
         return redirect(url_for('login'))
     
-    return render_template('empleadoMain.html')
+    empleado = Empleado.query.filter_by(usuario_FK=current_user.usuario_ID).first()
+
+    return render_template('empleadoMain.html', empleado=empleado)
 
 @app.route('/productoYfactura', methods=['GET', 'POST'])
 @login_required
