@@ -2,6 +2,7 @@ from flask import Flask, redirect, request, render_template, url_for, flash, sen
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager, login_user, logout_user, current_user, login_required
 from flask_bcrypt import Bcrypt
+from werkzeug.security import generate_password_hash, check_password_hash
 from models import Rol, Categoria, Usuario, Empleado, Producto, Inventario, Transaccion, Laboratorios, Factura, FacturaDetalle
 from config import DATABASE_URL, db
 from datetime import datetime
@@ -605,7 +606,6 @@ def generar_pdf(factura, productos, output_stream, cliente_info):
     elements.append(cliente_table)
     elements.append(Spacer(1, 20))
 
-    # Detalles de productos
     elements.append(Paragraph("Detalle de la Compra", header_style))
 
     table_data = [['Producto', 'Cantidad', 'Precio Unitario', 'Subtotal']]
@@ -769,6 +769,70 @@ def enviar_correo(destinatario, nueva_contraseña):
     except Exception as e:
         print(f"Error al enviar correo: {e}")
         return False
+
+@app.route('/update_profile', methods=['GET', 'POST'])
+@login_required
+def update_profile():
+    rol_usuario = Rol.query.get(current_user.rol_FK)
+    if not rol_usuario or rol_usuario.rol_usuario != "administrador":
+        flash('Acceso no autorizado', 'danger')
+        return redirect(url_for('adminMain'))
+    
+    usuario_actual = current_user
+
+    contraseña_actualizada_exitosamente = False
+    email_actualizado_exitosamente = False
+
+    if request.method == 'POST':
+        nueva_contraseña = request.form.get('nueva_contraseña')
+        confirmar_contraseña = request.form.get('confirmar_contraseña')
+        nuevo_email = request.form.get('nuevo_email') 
+
+        if nueva_contraseña or confirmar_contraseña:
+            if not nueva_contraseña or not confirmar_contraseña:
+                flash("Debes ingresar y confirmar la nueva contraseña.", "danger")
+            elif nueva_contraseña != confirmar_contraseña:
+                flash("Las contraseñas no coinciden.", "danger")
+            elif len(nueva_contraseña) < 6:
+                flash("La nueva contraseña debe tener al menos 6 caracteres.", "danger")
+            else:
+
+                if bcrypt.check_password_hash(usuario_actual.contraseña, nueva_contraseña):
+                    flash("La nueva contraseña no puede ser igual a la actual.", "danger")
+                else:
+                    usuario_actual.contraseña = bcrypt.generate_password_hash(nueva_contraseña).decode('utf-8')
+                    contraseña_actualizada_exitosamente = True
+                    flash("Contraseña actualizada exitosamente.", "success")
+
+        if nuevo_email is not None and nuevo_email.strip() != '': 
+            if nuevo_email == usuario_actual.email:
+                if not contraseña_actualizada_exitosamente:
+                    flash("El nuevo correo electrónico no puede ser igual al actual.", "warning")
+            else:
+                email_regex = r'^[a-zA-Z0-9_.]+@(gmail|hotmail|outlook|yahoo)\.com$'
+                if not re.match(email_regex, nuevo_email):
+                    flash("Solo se permiten correos de Gmail, Hotmail, Outlook o Yahoo con formato válido (ej. tucorreo@gmail.com).", "danger")
+                elif Usuario.query.filter(Usuario.email == nuevo_email, Usuario.usuario_ID != usuario_actual.usuario_ID).first():
+                    flash("El correo electrónico ya está en uso por otro usuario.", "danger")
+                else:
+                    usuario_actual.email = nuevo_email
+                    email_actualizado_exitosamente = True
+                    flash("Correo electrónico actualizado exitosamente.", "success")
+        
+        if contraseña_actualizada_exitosamente or email_actualizado_exitosamente:
+            try:
+                db.session.commit()
+            except Exception as e:
+                db.session.rollback()
+                flash(f"Error al guardar los cambios: {e}", "danger")
+        elif not request.form.get('nueva_contraseña') and not request.form.get('nuevo_email'):
+            pass 
+        else:
+            pass
+
+        return redirect(url_for('update_profile'))
+
+    return render_template('update_profile.html', usuario=usuario_actual)
 
 @app.route('/logout')
 @login_required
