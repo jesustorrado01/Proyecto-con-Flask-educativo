@@ -1,8 +1,6 @@
 from flask import Flask, redirect, request, render_template, url_for, flash, send_file, session, jsonify, make_response
-from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager, login_user, logout_user, current_user, login_required
 from flask_bcrypt import Bcrypt
-from werkzeug.security import generate_password_hash, check_password_hash
 from models import Rol, Categoria, Usuario, Empleado, Producto, Inventario, Transaccion, Laboratorios, Factura, FacturaDetalle
 from config import DATABASE_URL, db
 from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle
@@ -12,7 +10,6 @@ from reportlab.lib.enums import TA_CENTER, TA_LEFT
 from reportlab.lib.units import inch
 from reportlab.lib import colors
 from datetime import date, datetime, timezone, timedelta
-import os
 from io import BytesIO
 import re
 from email.mime.text import MIMEText
@@ -557,7 +554,6 @@ def generar_pdf(factura, productos, output_stream, cliente_info):
     elements = []
     styles = getSampleStyleSheet()
 
-    # Estilos personalizados
     title_style = ParagraphStyle(
         name='TitleCenter',
         parent=styles['Title'],
@@ -581,14 +577,12 @@ def generar_pdf(factura, productos, output_stream, cliente_info):
         fontName='Helvetica-Bold'
     )
 
-    # Encabezado
     elements.append(Paragraph("Droguería Farma Plus Junior", title_style))
     elements.append(Paragraph(f"Factura Nº {factura.factura_ID}", styles['Normal']))
     elements.append(Paragraph(f"Fecha: {factura.fecha.strftime('%Y-%m-%d %H:%M:%S')}", styles['Normal']))
     elements.append(Paragraph(f"Atendido por: {factura.empleado.nombre1} {factura.empleado.apellido1}", styles['Normal']))
     elements.append(Spacer(1, 12))
 
-    # Información del cliente
     elements.append(Paragraph("Información del Cliente", header_style))
 
     cliente_data = [
@@ -631,7 +625,6 @@ def generar_pdf(factura, productos, output_stream, cliente_info):
     elements.append(product_table)
     elements.append(Spacer(1, 16))
 
-    # Totales
     subtotal = sum(p["subtotal"] for p in productos)
     iva = subtotal * 0.19
     total_con_iva = subtotal + iva
@@ -653,10 +646,8 @@ def generar_pdf(factura, productos, output_stream, cliente_info):
     elements.append(totales_table)
     elements.append(Spacer(1, 30))
 
-    # Mensaje final
     elements.append(Paragraph("¡Gracias por su compra!", styles['Heading2']))
 
-    # Construir el documento
     doc.build(elements)
 
 
@@ -679,6 +670,102 @@ def historialVentas():
             })
     
     return render_template('historialVentas.html', productos=productos_vendidos)
+
+@app.route('/generarInformeVentasPDF')
+@login_required 
+def generar_informe_ventas_pdf_route():
+    hoy = date.today() 
+
+    facturas_del_dia = Factura.query.filter(Factura.fecha >= hoy).all()
+
+    datos_para_pdf = [] 
+    for factura in facturas_del_dia:
+        detalles = FacturaDetalle.query.filter_by(factura_FK=factura.factura_ID).all()
+        for detalle in detalles:
+            datos_para_pdf.append({
+                'nombre_producto': detalle.nombre_producto,
+                'cantidad': detalle.cantidad,
+                'precio_unitario': detalle.precio_unitario, 
+                'subtotal': detalle.subtotal                  
+            })
+
+    fecha_informe = datetime.now().strftime("%Y-%m-%d") 
+    nombre_archivo_pdf = f"Informe_Ventas_Dia_{fecha_informe}.pdf"
+
+    buffer = BytesIO()
+    generar_informe_ventas_pdf(buffer, fecha_informe, datos_para_pdf)
+    buffer.seek(0) 
+
+    return send_file(
+        buffer, 
+        download_name=nombre_archivo_pdf, 
+        mimetype='application/pdf', 
+        as_attachment=True 
+    )
+
+def generar_informe_ventas_pdf(buffer_o_nombre_archivo, fecha_informe, datos_productos_vendidos):
+    doc = SimpleDocTemplate(buffer_o_nombre_archivo, pagesize=letter)
+    styles = getSampleStyleSheet()
+    story = []
+
+    TASA_IVA_ESTANDAR = 19.0 
+
+    story.append(Paragraph(f"Informe de Ventas Diario - {fecha_informe}", styles['h1']))
+    story.append(Spacer(1, 0.2 * inch))
+
+    data_table = [['Producto', 'Cantidad', 'P. Unitario', 'Subtotal Neto', 'IVA (19%)', 'Total Ítem']]
+    
+    total_neto_ventas = 0
+    total_iva_recaudado = 0
+    total_bruto_ventas = 0
+
+    for item in datos_productos_vendidos:
+        nombre_producto = item["nombre_producto"]
+        cantidad = item["cantidad"]
+        precio_unitario = float(item["precio_unitario"]) 
+
+        subtotal_neto_item = cantidad * precio_unitario
+        
+        iva_item = subtotal_neto_item * (TASA_IVA_ESTANDAR / 100)
+        
+        total_item = subtotal_neto_item + iva_item
+
+        total_neto_ventas += subtotal_neto_item
+        total_iva_recaudado += iva_item
+        total_bruto_ventas += total_item
+
+        data_table.append([
+            nombre_producto,
+            str(cantidad), 
+            f"${precio_unitario:,.0f}", 
+            f"${subtotal_neto_item:,.0f}", 
+            f"${iva_item:,.0f}",
+            f"${total_item:,.0f}" 
+        ])
+
+    table = Table(data_table)
+
+    table.setStyle(TableStyle([
+        ('BACKGROUND', (0, 0), (-1, 0), colors.grey), 
+        ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke), 
+        ('ALIGN', (0, 0), (0, -1), 'LEFT'), 
+        ('ALIGN', (1, 0), (-1, -1), 'RIGHT'), 
+        ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+        ('BOTTOMPADDING', (0, 0), (-1, 0), 12), 
+        ('BACKGROUND', (0, 1), (-1, -1), colors.beige), 
+        ('GRID', (0, 0), (-1, -1), 1, colors.black) 
+    ]))
+    story.append(table) 
+    story.append(Spacer(1, 0.3 * inch)) 
+
+    story.append(Paragraph(f"<b>Resumen de Totales:</b>", styles['h2']))
+    story.append(Spacer(1, 0.1 * inch))
+    story.append(Paragraph(f"Subtotal Neto de Ventas: <b>${total_neto_ventas:,.0f} COP</b>", styles['Normal']))
+    story.append(Paragraph(f"Total IVA Calculado (19%): <b>${total_iva_recaudado:,.0f} COP</b>", styles['Normal']))
+    story.append(Paragraph(f"Total Bruto de Ventas (con IVA): <b>${total_bruto_ventas:,.0f} COP</b>", styles['h3']))
+    story.append(Spacer(1, 0.3 * inch))
+
+    doc.build(story)
 
 @app.route('/olvido_contraseña', methods=['GET', 'POST'])
 def olvidar_contraseña():
