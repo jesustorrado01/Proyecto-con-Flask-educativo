@@ -1,6 +1,6 @@
 from app import app, bcrypt
 from config import db
-from models import Usuario, Rol, Categoria, Empleado, Producto, Inventario, Transaccion, Laboratorios
+from models import Usuario, Rol, Categoria, Empleado, Producto, Inventario, Transaccion, Laboratorios, Cliente
 from datetime import datetime
 
 def init_db():
@@ -85,6 +85,19 @@ def init_db():
         laboratorio1 = Laboratorios(producto_FK=producto1.producto_ID, nombre_laboratorio="PharmaTech")
         laboratorio2 = Laboratorios(producto_FK=producto2.producto_ID, nombre_laboratorio="NaturalCare")
         db.session.add_all([laboratorio1, laboratorio2])
+        db.session.commit()
+
+        cliente1 = Cliente(
+            nombre="Ana María López",
+            cedula= "1234456789",
+            telefono="3001234567"
+        )
+        cliente2 = Cliente(
+            nombre="Luis Fernando Gómez",
+            cedula="1007654321",
+            telefono="3019876543"
+        )
+        db.session.add_all([cliente1, cliente2])
         db.session.commit()
 
         print("Base de datos inicializada correctamente con datos de prueba.")
