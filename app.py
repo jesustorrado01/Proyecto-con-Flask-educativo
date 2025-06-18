@@ -1,7 +1,7 @@
 from flask import Flask, redirect, request, render_template, url_for, flash, send_file, session, jsonify, make_response
 from flask_login import LoginManager, login_user, logout_user, current_user, login_required
 from flask_bcrypt import Bcrypt
-from models import Rol,Cliente, Categoria, Usuario, Empleado, Producto, Inventario, Transaccion, Laboratorios, Factura, FacturaDetalle
+from models import Rol, Cliente, Categoria, Usuario, Empleado, Producto, Transaccion, Factura, FacturaDetalle
 from config import DATABASE_URL, db
 from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
