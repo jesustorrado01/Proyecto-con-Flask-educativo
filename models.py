@@ -55,7 +55,7 @@ class Producto(db.Model):
     categoria_FK = db.Column(db.Integer, db.ForeignKey('categoria.categoria_ID', ondelete='CASCADE'), nullable=False)
     nombre_producto = db.Column(db.String(150), nullable=False)
     cantidad = db.Column(db.Integer, nullable=False)
-    precio = db.Column(db.Numeric(10,2), nullable=False)
+    precio = db.Column(db.Integer, nullable=False)
     fecha_caducidad = db.Column(db.Date, nullable=False)
 
     facturas_detalle = db.relationship('FacturaDetalle', backref='producto', cascade='all, delete')

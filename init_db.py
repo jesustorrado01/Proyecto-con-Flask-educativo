@@ -56,14 +56,14 @@ def init_db():
             categoria_FK=categoria_medicamentos.categoria_ID,
             nombre_producto="Paracetamol",
             cantidad=100,
-            precio=5.99,
+            precio=12000,
             fecha_caducidad=datetime(2025, 6, 1)
         )
         producto2 = Producto(
             categoria_FK=categoria_cuidado.categoria_ID,
             nombre_producto="Shampoo Anticaspa",
             cantidad=50,
-            precio=12.99,
+            precio=3000,
             fecha_caducidad=datetime(2026, 1, 15)
         )
         db.session.add_all([producto1, producto2])

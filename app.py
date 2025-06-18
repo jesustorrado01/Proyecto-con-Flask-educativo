@@ -137,7 +137,7 @@ def create_producto():
         errores.append("La cantidad debe ser un número entero.")
 
     try:
-        precio = float(data.get('precio', ''))
+        precio = int(data.get('precio', ''))
         if precio < 0:
             errores.append("El precio no puede ser negativo.")
     except ValueError:
@@ -200,7 +200,7 @@ def update_producto(id):
         errores.append("La cantidad debe ser un número entero.")
 
     try:
-        precio = float(data.get('precio', ''))
+        precio = int(data.get('precio', ''))
         if precio < 0:
             errores.append("El precio no puede ser negativo.")
     except ValueError:
@@ -463,8 +463,8 @@ def productoYfactura():
             'producto_id': producto_id,
             'nombre_producto': producto.nombre_producto,
             'cantidad': cantidad,
-            'precio_unitario': float(producto.precio),
-            'subtotal': cantidad * float(producto.precio)
+            'precio_unitario': int(producto.precio),
+            'subtotal': cantidad * int(producto.precio)
         })
         session['productos_comprados'] = productos_comprados  
 
@@ -488,7 +488,7 @@ def confirmar_factura():
         nombre = request.form.get('nombre_cliente')
         telefono = request.form.get('telefono_cliente')
         cedula = request.form.get('cedula_cliente')
-        total_iva = float(request.form.get('total_con_iva'))
+        total_iva = int(request.form.get('total_con_iva'))
 
         session['cliente_info'] = {
             'nombre': nombre,
@@ -538,7 +538,7 @@ def generar_factura():
         db.session.add(detalle)
     db.session.commit()
 
-    # Generar y retornar el PDF
+    
     pdf_stream = BytesIO()
     generar_pdf(nueva_factura, productos, pdf_stream, cliente_info)
     pdf_stream.seek(0)
@@ -722,7 +722,7 @@ def generar_informe_ventas_pdf(buffer_o_nombre_archivo, fecha_informe, datos_pro
     for item in datos_productos_vendidos:
         nombre_producto = item["nombre_producto"]
         cantidad = item["cantidad"]
-        precio_unitario = float(item["precio_unitario"]) 
+        precio_unitario = int(item["precio_unitario"]) 
 
         subtotal_neto_item = cantidad * precio_unitario
         

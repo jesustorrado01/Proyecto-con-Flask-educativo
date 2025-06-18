@@ -16,7 +16,6 @@
     <link rel="shortcut icon" href="{{ url_for('static', filename='img/favicon.ico') }}" type="image/x-icon">
 
     <style>
-        /* Asegura que el feedback de validación personalizado se muestre */
         .is-invalid + .invalid-feedback {
             display: block;
         }
@@ -29,15 +28,14 @@
         main {
             flex: 1;
         }
-        /* Estilo para Select2 en Bootstrap 5 */
         .select2-container .select2-selection--single {
-            height: calc(2.25rem + 2px); /* Altura de input estándar de Bootstrap */
-            border: 1px solid #ced4da; /* Color del borde */
-            border-radius: .25rem; /* Border-radius */
+            height: calc(2.25rem + 2px); 
+            border: 1px solid #ced4da; 
+            border-radius: .25rem; 
             display: flex;
             align-items: center;
-            padding-left: .75rem; /* Espaciado interno */
-            padding-right: .75rem; /* Espaciado interno */
+            padding-left: .75rem; 
+            padding-right: .75rem; 
         }
         .select2-container--default .select2-selection--single .select2-selection__arrow {
             top: 50%;
@@ -45,8 +43,8 @@
             right: 8px;
         }
         .select2-container--default .select2-selection--single .select2-selection__rendered {
-            line-height: 1.5; /* Altura de línea para el texto */
-            color: #495057; /* Color del texto */
+            line-height: 1.5; 
+            color: #495057; 
         }
         .select2-container--default.select2-container--focus .select2-selection--single {
             border-color: #80bdff;
@@ -128,7 +126,7 @@
                         <option value="">Seleccione un producto...</option> {# Opción por defecto para Select2 #}
                         {% for producto in productos %}
                             <option value="{{ producto.producto_ID }}">
-                                {{ producto.nombre_producto }} - ${{ '%.2f' % producto.precio }} (Disponible: {{ producto.cantidad }})
+                                {{ producto.nombre_producto }} - ${{ '%d' % producto.precio }} (Disponible: {{ producto.cantidad }})
                             </option>
                         {% endfor %}
                     </select>
@@ -157,7 +155,7 @@
                                 <i class="bi bi-bag-check me-2 text-info"></i>
                                 {{ item.nombre_producto }} (x{{ item.cantidad }})
                             </div>
-                            <span class="fw-bold">${{ '%.2f' % item.subtotal }}</span>
+                            <span class="fw-bold">${{ '%d' % item.subtotal }}</span>
                         </li>
                     {% endfor %}
                 </ul>
@@ -185,9 +183,9 @@
 
                     {% set total = session['productos_comprados'] | sum(attribute='subtotal') %}
                     {% set iva = total * 0.19 %}
-                    <p class="fs-5 mb-1"><strong>Subtotal:</strong> <span class="float-end">${{ '%.2f' % total }}</span></p>
-                    <p class="fs-5 mb-1"><strong>IVA (19%):</strong> <span class="float-end">${{ '%.2f' % iva }}</span></p>
-                    <h4 class="text-primary mt-3"><strong>Total a Pagar:</strong> <span class="float-end">${{ '%.2f' % (total + iva) }}</span></h4>
+                    <p class="fs-5 mb-1"><strong>Subtotal:</strong> <span class="float-end">${{ '%d' % total }}</span></p>
+                    <p class="fs-5 mb-1"><strong>IVA (19%):</strong> <span class="float-end">${{ '%d' % iva }}</span></p>
+                    <h4 class="text-primary mt-3"><strong>Total a Pagar:</strong> <span class="float-end">${{ '%d' % (total + iva) }}</span></h4>
 
                     <input type="hidden" name="total_con_iva" value="{{ total + iva }}">
 
