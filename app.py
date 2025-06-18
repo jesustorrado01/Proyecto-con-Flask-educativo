@@ -488,7 +488,7 @@ def confirmar_factura():
         nombre = request.form.get('nombre_cliente')
         telefono = request.form.get('telefono_cliente')
         cedula = request.form.get('cedula_cliente')
-        total_iva = int(request.form.get('total_con_iva'))
+        total_iva = int(float(request.form.get('total_con_iva')))
 
         session['cliente_info'] = {
             'nombre': nombre,
@@ -607,8 +607,8 @@ def generar_pdf(factura, productos, output_stream, cliente_info):
         table_data.append([
             p["nombre_producto"],
             str(p["cantidad"]),
-            f"${p['precio_unitario']:.2f}",
-            f"${p['subtotal']:.2f}"
+            f"${int(p['precio_unitario'])}",
+            f"${int(p['subtotal'])}" 
         ])
 
     product_table = Table(table_data, colWidths=[2.5 * inch, 1 * inch, 1.2 * inch, 1.2 * inch])
@@ -630,9 +630,9 @@ def generar_pdf(factura, productos, output_stream, cliente_info):
     total_con_iva = subtotal + iva
 
     totales_data = [
-        ["Subtotal:", f"${subtotal:.2f}"],
-        ["IVA (19%):", f"${iva:.2f}"],
-        ["Total con IVA:", f"${total_con_iva:.2f}"]
+        ["Subtotal:", f"${int(subtotal)}"],
+        ["IVA (19%):", f"${int(iva)}"],
+        ["Total con IVA:", f"${int(total_con_iva)}"] # Corrected line: Removed the extra '[' and made sure it's a single list item
     ]
     totales_table = Table(totales_data, colWidths=[4.3 * inch, 1.6 * inch], hAlign='RIGHT')
     totales_table.setStyle(TableStyle([
@@ -740,7 +740,7 @@ def generar_informe_ventas_pdf(buffer_o_nombre_archivo, fecha_informe, datos_pro
             f"${precio_unitario:,.0f}", 
             f"${subtotal_neto_item:,.0f}", 
             f"${iva_item:,.0f}",
-            f"${total_item:,.0f}" 
+            f"${total_item:,.0f}"  
         ])
 
     table = Table(data_table)
@@ -760,9 +760,9 @@ def generar_informe_ventas_pdf(buffer_o_nombre_archivo, fecha_informe, datos_pro
 
     story.append(Paragraph(f"<b>Resumen de Totales:</b>", styles['h2']))
     story.append(Spacer(1, 0.1 * inch))
-    story.append(Paragraph(f"Subtotal Neto de Ventas: <b>${total_neto_ventas:,.0f} COP</b>", styles['Normal']))
-    story.append(Paragraph(f"Total IVA Calculado (19%): <b>${total_iva_recaudado:,.0f} COP</b>", styles['Normal']))
-    story.append(Paragraph(f"Total Bruto de Ventas (con IVA): <b>${total_bruto_ventas:,.0f} COP</b>", styles['h3']))
+    story.append(Paragraph(f"Subtotal Neto de Ventas: <b>${total_neto_ventas:,.0f} COP</b>", styles['Normal'])) 
+    story.append(Paragraph(f"Total IVA Calculado (19%): <b>${total_iva_recaudado:,.0f} COP</b>", styles['Normal'])) 
+    story.append(Paragraph(f"Total Bruto de Ventas (con IVA): <b>${total_bruto_ventas:,.0f} COP</b>", styles['h3'])) 
     story.append(Spacer(1, 0.3 * inch))
 
     doc.build(story)

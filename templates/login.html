@@ -8,11 +8,23 @@
         <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet">
         <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css"/>
         <link rel="shortcut icon" href="{{ url_for('static', filename='img/favicon.ico') }}" type="image/x-icon">
+
+        <style>
+           body{
+                background: #e0e0e0;
+                background: linear-gradient(90deg, rgba(224, 224, 224, 1) 0%, rgba(126, 175, 224, 1) 50%, rgba(219, 219, 219, 1) 100%);
+            }
+
+            .custom-shadow {
+                box-shadow: 0 10px 20px rgba(0, 0, 0, 0.7), 0 6px 6px rgba(0, 0, 0, 0.5);
+            }
+        </style>
+        
     </head>
-    
+
     <body class="bg-light d-flex flex-column justify-content-center align-items-center vh-100">
 
-        <div class="card shadow-lg p-4 animate__animated animate__fadeInDown" style="width: 22rem;">
+        <div class="card custom-shadow p-4 animate__animated animate__fadeInDown" style="width: 22rem;">
             <h2 class="text-center mb-4">💊 Droguería Farma Plus Junior</h2>
     
             {% with messages = get_flashed_messages(with_categories=True) %}
@@ -49,7 +61,7 @@
             </form>
         </div>
     
-        <footer class="mt-4 text-center text-muted small">
+        <footer class="mt-4 text-center text-muted small ">
             © 2025 Droguería Farma Plus Junior
         </footer>
 

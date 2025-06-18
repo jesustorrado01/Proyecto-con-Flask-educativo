@@ -92,7 +92,8 @@ class Factura(db.Model):
     __tablename__ = 'facturas'
     factura_ID = db.Column(db.Integer, primary_key=True, autoincrement=True)
     usuario_FK = db.Column(db.Integer, db.ForeignKey('usuarios.usuario_ID', ondelete='CASCADE'), nullable=False)
-    empleado_FK = db.Column(db.Integer, db.ForeignKey('empleados.empleado_ID', ondelete='CASCADE'), nullable=True)  
+    empleado_FK = db.Column(db.Integer, db.ForeignKey('empleados.empleado_ID', ondelete='CASCADE'), nullable=True)
+    cliente_FK = db.Column(db.Integer, db.ForeignKey('clientes.cliente_ID', ondelete='CASCADE'), nullable=False)
     fecha = db.Column(db.DateTime, default=datetime.utcnow)
     total = db.Column(db.Numeric(10,2), nullable=False)
 
@@ -112,3 +113,13 @@ class FacturaDetalle(db.Model):
     precio_unitario = db.Column(db.Numeric(10,2), nullable=False)
     subtotal = db.Column(db.Numeric(10,2), nullable=False)
 
+#TABLA CLIENTE
+
+class Cliente(db.Model):
+    __tablename__ = 'clientes'
+    cliente_ID = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    nombre = db.Column(db.String(150), nullable=False)
+    cedula = db.Column(db.String(20), unique=True)
+    telefono = db.Column(db.String(15), nullable=False)
+
+    facturas = db.relationship('Factura', backref='Cliente', lazy=True)
