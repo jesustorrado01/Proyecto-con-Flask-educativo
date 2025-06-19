@@ -430,6 +430,12 @@ def empleadoMain():
 @app.route('/productoYfactura', methods=['GET', 'POST'])
 @login_required
 def productoYfactura():
+    if not (current_user.is_authenticated and 
+            Rol.query.get(current_user.rol_FK) and 
+            Rol.query.get(current_user.rol_FK).rol_usuario in ["administrador", "empleado"]):
+        flash("Acceso no autorizado. Solo empleados y administradores pueden acceder a esta sección.", "danger")
+        return redirect(url_for('login')) 
+
     if request.method == 'POST':
         producto_id = request.form['producto']
         cantidad = int(request.form['cantidad'])
@@ -472,7 +478,9 @@ def productoYfactura():
         return redirect(url_for('productoYfactura'))
 
     productos = Producto.query.all()
-    return render_template('registro_compra.html', productos=productos)
+    clientes = Cliente.query.order_by(Cliente.nombre).limit(20).all() 
+
+    return render_template('registro_compra.html', productos=productos, clientes=clientes)
 
 @app.route('/vaciar_carrito')
 @login_required
@@ -1012,6 +1020,26 @@ def update_profile():
         return redirect(url_for('update_profile'))
 
     return render_template('update_profile.html', usuario=usuario_actual)
+
+@app.route('/clientes/buscar_por_cedula', methods=['GET'])
+@login_required
+def buscar_clientes_por_cedula():
+    if not (current_user.rol_FK and Rol.query.get(current_user.rol_FK).rol_usuario in ["administrador", "empleado"]):
+        return jsonify({'results': []}), 403 # 
+
+    query = request.args.get('term', '').strip() # 'term' es el parámetro que Select2 envía
+
+    clientes = []
+    if query:
+        clientes_db = Cliente.query.filter(Cliente.cedula.ilike(f'%{query}%')).all()
+        
+        for cliente in clientes_db:
+            clientes.append({
+                'id': cliente.cliente_ID,
+                'text': f"{cliente.nombre} (Cédula: {cliente.cedula or 'N/A'})"
+            })
+    
+    return jsonify({'results': clientes})
 
 @app.route('/logout')
 @login_required
