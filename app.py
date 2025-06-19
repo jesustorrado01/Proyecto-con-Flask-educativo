@@ -503,7 +503,7 @@ def createCliente():
     if errores:
         for e in errores:
             flash(e, "danger")
-        return redirect(url_for('createCliente'))
+        return redirect(url_for('formCliente'))
 
     nuevo_cliente = Cliente(
         nombre=data['nombre'].strip(),
