@@ -522,7 +522,7 @@ def createCliente():
     db.session.commit()
 
     flash("Cliente registrado exitosamente", "success")
-    return redirect(url_for('registro_compra'))
+    return redirect(url_for('productoYfactura'))
 
 
 def validar_cliente(data):
