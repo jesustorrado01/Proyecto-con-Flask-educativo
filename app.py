@@ -481,8 +481,6 @@ def vaciar_carrito():
     flash('Carrito vaciado correctamente.', 'info')
     return redirect(url_for('productoYfactura'))
 
-
-
 @app.route('/confirmar_factura', methods=['GET', 'POST'])
 @login_required
 def confirmar_factura():
