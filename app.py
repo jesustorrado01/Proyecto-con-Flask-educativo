@@ -481,6 +481,70 @@ def vaciar_carrito():
     flash('Carrito vaciado correctamente.', 'info')
     return redirect(url_for('productoYfactura'))
 
+@app.route('/formCliente', methods=['GET'])
+@login_required
+def formCliente():
+    if Rol.query.get(current_user.rol_FK).rol_usuario != "empleado":
+        flash("Acceso no autorizado", "danger")
+        return redirect(url_for("registro_compra"))
+    
+    return render_template('create_cliente.html')
+
+@app.route('/createCliente', methods=['POST'])
+@login_required
+def createCliente():
+    if Rol.query.get(current_user.rol_FK).rol_usuario != "empleado":
+        flash("Acceso no autorizado", "danger")
+        return redirect(url_for("registro_compra"))
+    
+    data = request.form
+
+    errores = validar_cliente(data)
+    if errores:
+        for e in errores:
+            flash(e, "danger")
+        return redirect(url_for('createCliente'))
+
+    nuevo_cliente = Cliente(
+        nombre=data['nombre'].strip(),
+        cedula=data['cedula'],
+        telefono=data['telefono']
+    )
+    db.session.add(nuevo_cliente)
+    db.session.commit()
+
+    flash("Cliente registrado exitosamente", "success")
+    return redirect(url_for('registro_compra'))
+
+
+def validar_cliente(data):
+    errores = []
+
+    for campo in ['cedula', 'telefono', 'nombre']:
+        if not data.get(campo) or not data[campo].strip():
+            errores.append(f"El campo '{campo}' no puede estar vacío.")
+
+    cedula = data.get('cedula', '').strip()
+    if not cedula.isdigit() or len(cedula) < 6:
+        errores.append("La cédula debe contener solo números y tener al menos 6 dígitos.")
+    if Cliente.query.filter_by(cedula=cedula).first():
+        errores.append("El número de documento ya está registrado.")
+
+    telefono = data.get('telefono', '').strip()
+    if not telefono.isdigit() or len(telefono) != 10:
+        errores.append("El número de teléfono debe contener 10 dígitos.")
+    if Cliente.query.filter_by(telefono=telefono).first():
+        errores.append("El número de teléfono ya está en uso.")
+
+    if cedula == telefono:
+        errores.append("La cédula y el teléfono no pueden ser iguales.")
+
+    nombre = data.get('nombre', '').strip()
+    if not re.match(r"^[A-Za-zÁÉÍÓÚáéíóúÑñ\s]+$", nombre):
+        errores.append("El nombre solo debe contener letras, espacios y tildes.")
+
+    return errores
+
 @app.route('/confirmar_factura', methods=['GET', 'POST'])
 @login_required
 def confirmar_factura():
