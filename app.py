@@ -553,25 +553,30 @@ def validar_cliente(data):
 
     return errores
 
-@app.route('/confirmar_factura', methods=['GET', 'POST'])
+@app.route('/confirmar_factura', methods=['POST'])
 @login_required
 def confirmar_factura():
-    if request.method == 'POST':
-        nombre = request.form.get('nombre_cliente')
-        telefono = request.form.get('telefono_cliente')
-        cedula = request.form.get('cedula_cliente')
-        total_iva = int(float(request.form.get('total_con_iva')))
+    cliente_id = request.form.get('cliente_id')
+    total_iva = int(float(request.form.get('total_con_iva')))
 
-        session['cliente_info'] = {
-            'nombre': nombre,
-            'telefono': telefono,
-            'cedula': cedula,
-            'total_con_iva': total_iva
-        }
+    if not cliente_id:
+        flash('Debe seleccionar un cliente.', 'danger')
+        return redirect(url_for('productoYfactura'))
 
-        return redirect(url_for('generar_factura', cancelada='si'))
+    cliente = Cliente.query.get(cliente_id)
+    if not cliente:
+        flash('El cliente seleccionado no existe.', 'danger')
+        return redirect(url_for('productoYfactura'))
 
-    return render_template('confirmar_factura.html')
+    session['cliente_info'] = {
+        'cliente_id': cliente.cliente_ID,
+        'nombre': cliente.nombre,
+        'telefono': cliente.telefono,
+        'cedula': cliente.cedula or 'N/A',
+        'total_con_iva': total_iva
+    }
+
+    return redirect(url_for('generar_factura', cancelada='si'))
 
 @app.route('/generar_factura', methods=['GET'])
 @login_required
@@ -580,18 +585,22 @@ def generar_factura():
         flash('No hay productos agregados.', 'danger')
         return redirect(url_for('productoYfactura'))
 
-    cliente_info = session.pop('cliente_info', None)
+    cliente_info = session.pop('cliente_info', None)  
+
     if not cliente_info:
         flash('Información del cliente faltante. Por favor, ingresa los datos.', 'danger')
         return redirect(url_for('productoYfactura'))
 
+    cliente_id = cliente_info.get('cliente_id')  
     productos = session.pop('productos_comprados')
     total = cliente_info['total_con_iva']
 
     empleado = Empleado.query.filter_by(usuario_FK=current_user.usuario_ID).first()
+
     nueva_factura = Factura(
         usuario_FK=current_user.usuario_ID,
         empleado_FK=empleado.empleado_ID,
+        cliente_FK=cliente_id,
         total=total,
         fecha=datetime.now(timezone.utc)
     )
@@ -608,9 +617,9 @@ def generar_factura():
             subtotal=p["subtotal"]
         )
         db.session.add(detalle)
+
     db.session.commit()
 
-    
     pdf_stream = BytesIO()
     generar_pdf(nueva_factura, productos, pdf_stream, cliente_info)
     pdf_stream.seek(0)
