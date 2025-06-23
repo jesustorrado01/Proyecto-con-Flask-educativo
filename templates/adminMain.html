@@ -15,9 +15,16 @@
     <link href="https://cdn.datatables.net/1.13.6/css/dataTables.bootstrap5.min.css" rel="stylesheet">
     
     <link rel="shortcut icon" href="{{ url_for('static', filename='img/favicon.ico') }}" type="image/x-icon">
-    
-    </head>
-<body class="bg-light d-flex flex-column min-vh-100"> <nav class="navbar navbar-expand-lg navbar-dark bg-primary shadow-sm">
+
+    <style>
+        body {
+            background: #ccfcff;
+            background-color: #67bef8;
+        }
+    </style>
+
+</head>
+<body class="d-flex flex-column min-vh-100"> <nav class="navbar navbar-expand-lg navbar-dark bg-primary shadow-sm">
         <div class="container-fluid">
             <a class="navbar-brand d-flex align-items-center" href="{{ url_for('adminMain') }}">
                 <i class="bi bi-capsule me-2"></i>
